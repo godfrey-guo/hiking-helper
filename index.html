@@ -189,8 +189,10 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 @keyframes qghop{0%,100%{margin-top:0}35%{margin-top:-14px}65%{margin-top:0}82%{margin-top:-5px}}
 .qg-say{margin-top:10px;padding:10px 12px;border:1.5px solid var(--ink);border-radius:14px;background:#FBF3D4;font-size:14px;line-height:1.6}
 .qg-say b{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:99px;background:var(--ink);color:#fff;font-size:12px}
-.qg-ph{margin-top:12px}.qg-ph-t{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--mute);margin-bottom:6px}
-.qg-chips{display:flex;flex-wrap:wrap;gap:6px}
+.qg-ph{margin-top:0;flex:0 0 auto}.qg-ph-t{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--mute);margin-bottom:6px}
+.qg-chips{display:flex;flex-wrap:nowrap;gap:6px}
+#qgStep{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 10px;margin:4px -2px 8px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.qg-chip{flex:0 0 auto;white-space:nowrap;scroll-snap-align:center}
 .qg-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:6px 12px 6px 6px;border:1px solid var(--line);background:#fff;border-radius:99px;font-size:14px;color:var(--ink);text-align:left;cursor:pointer;font-family:inherit}
 .qg-chip b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--chip);display:inline-flex;align-items:center;justify-content:center;font-size:13px}
 .qg-chip.on{background:var(--acc-t);border-color:var(--acc-t);color:#fff;font-weight:700}
@@ -1158,10 +1160,17 @@ function qgCard(G){
 function qgGuide(G){
   const st=G.stations[QG.i];
   return `<div class="qg-prog"><span id="qgCnt">第 ${QG.i+1} / ${G.stations.length} 站</span><div class="bar"><i id="qgBar" style="width:${(QG.i+1)/G.stations.length*100}%"></i></div></div>
+    <nav id="qgStep" aria-label="站點目錄">${qgStepper(G)}</nav>
     <div class="qg-ridge" id="qgRidge"><svg id="qgSvg" viewBox="0 0 900 260" role="img" aria-label="山脊上的 8 個站點，目前在第 ${QG.i+1} 站：${esc(qgTitle(st.title))}">${qgSvg(G)}</svg></div>
     <div class="qg-say mtn y" id="qgSay" aria-live="polite"><b>黑熊說</b>${esc(st.bearSpeech)}</div>
-    <nav id="qgStep" aria-label="站點目錄">${qgStepper(G)}</nav>
     <div id="qgCard">${qgCard(G)}</div>`;
+}
+function qgScrollTop(){
+  const el=document.querySelector('#qaBody .qg-prog')||document.getElementById('qaBody');if(!el)return;
+  const h=document.querySelector('header'),hh=h&&h.offsetHeight?h.offsetHeight:0;
+  const y=el.getBoundingClientRect().top+window.pageYOffset-hh-8;
+  window.scrollTo(0,Math.max(0,y));
+  const box=document.getElementById('qgStep'),on=box&&box.querySelector('.qg-chip.on');if(box&&on)box.scrollLeft=on.offsetLeft-(box.clientWidth-on.offsetWidth)/2;
 }
 function qgPaint(){
   const G=window.QA_GUIDE;if(!G)return;const st=G.stations[QG.i];
@@ -1685,11 +1694,11 @@ function act(a,el){
     case 'delTrip':{if(!armed('delTrip'+t.id,'要刪除「'+t.name+'」嗎？'))return;S.trips=S.trips.filter(x=>x.id!==t.id);if(!S.trips.length)S.trips.push(newTrip());S.cur=S.trips[0].id;break}
     case 'addNode':t.nodes.push({id:uid(),name:'新站點',min:30,rest:0,water:'none',note:'',km:0,alt:0,night:false});break;
     case 'jumpSched':{const e=document.getElementById('sched');if(e)e.scrollIntoView({behavior:'smooth',block:'start'});return}
-    case 'qaMode':{QG.mode=el.dataset.m;QG.q='';const qi=document.getElementById('qaQ');if(qi)qi.value='';qaBodyRender();return}
+    case 'qaMode':{QG.mode=el.dataset.m;QG.q='';const qi=document.getElementById('qaQ');if(qi)qi.value='';qaBodyRender();setTimeout(qgScrollTop,30);return}
     case 'qaGo':{const G=window.QA_GUIDE;if(!G)return;const n=+el.dataset.i;if(!(n>=0&&n<G.stations.length))return;
       const wasSearch=!!QG.q.trim()||QG.mode!=='guide';QG.i=n;QG.mode='guide';QG.q='';const qi=document.getElementById('qaQ');if(qi)qi.value='';
       if(wasSearch){qaBodyRender()}else qgPaint();
-      const sc=document.querySelector('.qg-scene');if(sc)sc.scrollIntoView({behavior:'smooth',block:'start'});return}
+      setTimeout(qgScrollTop,30);return}
     case 'qaWx':{QG.wx=el.dataset.w;qgPaint();return}
     case 'qaGearReset':{qgSetGear({});qaBodyRender();return}
     case 'qaCopy':{const G=window.QA_GUIDE;if(!G)return;const txt=qgCopyText(G);
