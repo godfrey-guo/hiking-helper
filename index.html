@@ -121,6 +121,28 @@ th{background:var(--chip);white-space:nowrap}
 .pl-day>.dh{background:#408467;color:#fff;padding:8px 12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-weight:700}
 .pl-day>.dh span{font-weight:400;font-size:13px}
 .pl-day>.ds{background:#F1F5F2;padding:6px 12px;font-size:13px;color:#445}
+.pc-title{font-size:20px;font-weight:800;padding:4px 4px 8px}.pc-title small{display:block;font-size:13px;font-weight:400;color:#666;margin-top:4px;line-height:1.6}
+.pc{border:1.5px solid;border-radius:14px;margin:12px 0;overflow:hidden;break-inside:avoid}
+.pc-h{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:16px}.pc-h span{font-size:14px;font-weight:400}
+.pc-m{padding:8px 14px;font-size:13px;color:#555;line-height:1.7}
+.pc-b{padding:8px 14px 4px}
+.pc-n{display:grid;grid-template-columns:52px 16px 1fr;align-items:start;gap:6px;padding:4px 0}
+.pc-t{font-size:16px;font-variant-numeric:tabular-nums}
+.pc-n i{width:11px;height:11px;border-radius:50%;background:var(--c);margin-top:6px}
+.pc-nm{font-weight:700;font-size:15.5px;line-height:1.45}.pc-nm small{display:block;font-weight:400;font-size:12.5px;color:#666}
+.pc-nm em{font-style:normal;font-size:11.5px;font-weight:700;background:#E9CF79;border-radius:6px;padding:1px 7px;margin-left:8px;white-space:nowrap}.pc-nm em.n{background:#E9CF79}
+.pc-s{display:grid;grid-template-columns:52px 16px 1fr;gap:6px;min-height:30px;align-items:center}
+.pc-s span{grid-column:3;font-size:13px;color:#555;border-left:2px solid var(--c);padding-left:16px;margin-left:-16.5px;display:block;line-height:30px}
+.pc-f{padding:8px 14px;font-size:12.5px;color:#555;line-height:1.6}
+.rm-wrap{border:1.5px solid #D9D9D9;border-radius:14px;padding:8px;background:#fff;margin:8px 0}
+.rm-t{font-weight:800;font-size:16px;padding:2px 4px 6px}.rm-t small{display:block;font-weight:400;font-size:12px;color:#666}
+.rm-f{font-size:12px;color:#666;padding:4px}
+.ov-d{border:1.5px solid #408467;border-radius:14px;margin:10px 0;overflow:hidden;break-inside:avoid;background:#fff}
+.ov-h{background:#408467;color:#fff;padding:8px 12px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.ov-h span{font-size:13px;opacity:.9}.ov-h .r{margin-left:auto}
+.ov-n{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:6px 12px;align-items:center}
+.ov-n i{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums;color:#408467}
+.ov-n span{font-weight:700}.ov-n em{font-style:normal;font-weight:400;font-size:12px;background:#E9CF79;border-radius:99px;padding:1px 8px;margin-left:8px;white-space:nowrap}
+.ov-s{margin:0 0 0 68px;padding:2px 0 2px 12px;border-left:3px dotted #91B9CE;font-size:13px;color:#445}.ov-s b{color:#2d6a91}
 .pl-r{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:7px 12px;border-top:1px solid #EEE;font-size:14px}
 .pl-r b{font-variant-numeric:tabular-nums;color:#408467}
 .pl-r small{display:block;color:#6b7a72;font-size:12px}
@@ -1228,6 +1250,45 @@ function vWx(t,c){
 `;
 }
 
+/* ---------- 行程卡片（每天一張：時間、站點、走幾分鐘） ---------- */
+const PC_COL=[['#408467','#E4EFE9','#C9DFD3'],['#B8860B','#FBF3D4','#EBD58E'],['#2d6a91','#E3EEF4','#BBD3E2']];
+function planCards(t,c){
+  const nd=c.days.length;if(!nd)return '';
+  const mm=v=>v>=60?Math.floor(v/60)+' 時'+(v%60?' '+v%60+' 分':''):v+' 分';
+  const cards=c.days.map((o,di)=>{
+    const col=PC_COL[di%3],dt=addDays(t.date,o.d-1);
+    const prev=o.d>1?c.rows.filter(r=>r.day===o.d-1).slice(-1)[0]:null;
+    const origin=o.d===1?o.rows[0]:prev,items=o.d===1?o.rows.slice(1):o.rows;
+    const tag=(txt,night)=>`<em class="${night?'n':''}">${txt}</em>`;
+    const node=(name,time,tg,sub)=>`<div class="pc-n"><b class="pc-t">${time}</b><i></i><div class="pc-nm">${esc(name)}${tg||''}${sub?`<small>${sub}</small>`:''}</div></div>`;
+    let h=node(origin.n.name,hm(o.start),tag('出發'),o.d===1&&origin.rest>0?'休息 '+mm(origin.rest):'');
+    const names=[origin.n.name];
+    items.forEach((r,k)=>{
+      const lastOne=k===items.length-1;
+      h+=`<div class="pc-s"><span>${r.n.fixed?'🚌 車程':'↓ 走'} ${mm(r.walk)}${!r.n.fixed&&r.n.km?`・${(+r.n.km).toFixed(1)} km`:''}${/輕裝/.test(r.n.note||'')?'・輕裝':''}</span></div>`;
+      let tg='';if(r.endOfDay)tg=tag('過夜',1);else if(lastOne&&o.d===nd)tg=tag('終點');
+      h+=node(r.n.name,hm(r.arrive),tg,!r.endOfDay&&r.rest>0?'休息 '+mm(r.rest):'');
+      names.push(r.n.name+(r.endOfDay?'（宿）':''));
+    });
+    return `<section class="pc" style="border-color:${col[0]};background:#fff"><div class="pc-h" style="background:${col[1]};color:${col[0]}"><b>DAY ${o.d}</b><span>${esc(fmtDate(dt))}</span></div>
+      <div class="pc-m" style="border-bottom:1px solid ${col[2]}">${hm(o.start)} 出發 → ${hm(o.end)} ${o.d===nd?'下山':'抵達'}<br>移動 ${mm(o.walk)}${o.rest?'・休息 '+mm(o.rest):''}${o.km?'・'+o.km.toFixed(1)+' km':''}</div>
+      <div class="pc-b" style="--c:${col[0]}">${h}</div>
+      <div class="pc-f" style="border-top:1px solid ${col[2]}">${names.map(esc).join(' → ')}</div></section>`;
+  }).join('');
+  const last=c.days[nd-1];
+  return `<div class="rm-wrap" id="routeMap"><div class="pc-title">${esc(t.name)} 登山計畫<small>${fmtDate(t.date)} 出發・${nd} 天・${t.people} 人${t.contact?'<br>緊急聯絡：'+esc(t.contact):''}</small></div>${cards}<div class="rm-f">時間為行程估算，不代表當日路況與實際距離，請對照上河原圖。預計下山 ${fmtDate(addDays(t.date,nd-1))} ${hm(last.end)}。</div></div>`;
+}
+async function routeImg(){
+  const el=document.getElementById('routeMap');if(!el){toast('請先建立行程');return}
+  toast('產生圖片中…');
+  try{await loadH2C()}catch(e){alert('存成圖片需要連線載入一次圖片工具。目前連不上，請改用手機截圖。');return}
+  const box=document.createElement('div');box.style.cssText='position:fixed;left:-10000px;top:0;width:820px;background:#fff;padding:8px';box.innerHTML=el.outerHTML;document.body.appendChild(box);
+  try{
+    const cv=await html2canvas(box,{scale:2,backgroundColor:'#ffffff',useCORS:true});box.remove();
+    cv.toBlob(b=>{if(!b){alert('產生圖片失敗，請改用手機截圖');return}window._snapBlob=b;
+      openOv(`<div class="bar2"><button class="pri" data-act="closeOv">✕ 關閉</button><button data-act="shareImg">📤 分享／儲存</button></div><img src="${URL.createObjectURL(b)}" alt="路線示意圖" style="max-width:100%"><div style="color:#fff;font-size:13px;text-align:center;margin-top:8px">長按圖片可儲存，或按「分享／儲存」</div>`)});
+  }catch(e){box.remove();alert('產生圖片失敗，請改用手機截圖')}
+}
 function vPlan(t,c){
   if(!c.days.length)return '<section class="card"><h2>計畫書</h2><div class="alert warn">請先到「行程」選路線或加入站點。</div></section>';
   const nd=c.days.length,s1=sunTimes(t.date,t.lat,t.lon),last=c.days[nd-1],cats=gearList(t),segs=waterPlan(t,c);
@@ -1247,7 +1308,8 @@ function vPlan(t,c){
       <div><small>入園入山證</small>${esc(t.permit)||'—'}</div>
       <div><small>第 1 天日出日落</small>☀ ${hm(s1.rise)}　🌇 ${hm(s1.set)}</div>
       <div class="w2"><small>總計</small>行走 ${dur(c.tot.walk)}　休息 ${dur(c.tot.rest)}${c.tot.km?`　距離 ${c.tot.km.toFixed(1)} km`:''}${c.tot.up?`　爬升 ${c.tot.up} m　下降 ${c.tot.down} m`:''}</div></div>
-    <h3>每日行程</h3>${days}
+    <h3>行程卡片</h3>${planCards(t,c)}<div class="row noprint" style="margin:6px 0 10px"><button class="pri sm" data-act="routeImg">🖼 存成行程圖片</button></div>
+     <h3>每日行程</h3>${days}
     <h3>補水區間（每人建議攜水）</h3>
     <table><tr><th>區間</th><th>行走</th><th>攜水</th></tr>${segs.map(s=>`<tr><td>${esc(s.from)} → ${esc(s.to)}</td><td>${dur(s.min)}</td><td>${s.L} L</td></tr>`).join('')}</table>
     <h3>裝備清單</h3><div class="pl-gear">${cats.map(g=>`<div><b>${esc(g.c)}</b>${g.items.map(x=>`<span>${gOn(t,x)?'☑':'☐'}${esc(x.name)}</span>`).join('')}</div>`).join('')}</div>
@@ -1260,7 +1322,7 @@ function planText(t,c){
   const nd=c.days.length;
   let s=`【${t.name}】\n${fmtDate(t.date)} 出發，共 ${nd} 天，${t.people} 人\n預計下山：${nd?fmtDate(addDays(t.date,nd-1))+' '+hm(c.days[nd-1].end):'—'}\n緊急聯絡：${t.contact||'—'}\n入園證：${t.permit||'—'}\n`;
   c.days.forEach(o=>{s+=`\n第${o.d}天 ${fmtDate(addDays(t.date,o.d-1))}（${hm(o.start)} → ${hm(o.end)}）\n`;
-    o.rows.forEach(r=>{s+=`  ${r.i===0?hm(r.arrive):hm(r.arrive)} ${r.n.name}${r.endOfDay?'（過夜）':''}${r.n.water!=='none'?' '+WATER[r.n.water]:''}\n`})});
+    o.rows.forEach(r=>{s+=`  ${hm(r.arrive)} ${r.n.name}${r.walk>0?'（走'+r.walk+'分）':''}${r.endOfDay?'（過夜）':''}${r.n.water!=='none'?' '+WATER[r.n.water]:''}\n`})});
   return s;
 }
 
@@ -2184,6 +2246,7 @@ function act(a,el){
     case 'zoom':{const im=document.getElementById('mapImg');if(!im)return;let w=parseFloat(im.style.width)||100;w=Math.max(60,Math.min(400,w+(+el.dataset.d)*40));im.style.width=w+'%';return}
     case 'snapView':snapView();return;
     case 'snapImg':snapImg();return;
+    case 'routeImg':routeImg();return;
     case 'shareImg':shareImg();return;
     case 'closeOv':closeOv();return;
     case 'copyText':copyText();return;
