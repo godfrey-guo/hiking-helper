@@ -404,7 +404,7 @@ code{background:#F4F4F4;border-radius:6px;padding:1px 6px;font-size:13px}
 .fox-b>span.fade{animation:foxf .2s ease}
 @keyframes foxp{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes foxf{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.fox.wig,.fox.wig .fxf,.fox-tap,.fox-b>span.fade{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.fox.wig,.fox-tap,.fox-b>span.fade{animation:none!important}}
 .nextbar{margin:18px 0 6px}
 .nextbar button{width:100%;min-height:50px;font-size:16px;font-weight:700;border-radius:14px}
 #toast{bottom:84px}
@@ -1399,7 +1399,6 @@ const FOXRM=()=>{try{return window.matchMedia&&window.matchMedia('(prefers-reduc
 function foxWave(txt){
   const t=document.getElementById('foxTxt'),f=document.getElementById('foxBtn');
   if(!f||FOXBUSY)return;
-  if(FOXRM()){if(txt!==undefined&&t)t.textContent=FOXMSG[txt];return}
   FOXBUSY=true;
   f.classList.remove('wig');void f.offsetWidth;f.classList.add('wig');
   if(txt!==undefined&&t)setTimeout(()=>{t.textContent=FOXMSG[txt];t.classList.remove('fade');void t.offsetWidth;t.classList.add('fade')},230);
@@ -1414,7 +1413,7 @@ function foxSay(){
 /* 第一次捲到畫面時，自動招手一次（只一次，不連續動） */
 function foxInvite(){
   if(FOXINV)return;const f=document.getElementById('foxBtn');if(!f)return;
-  const go=()=>{if(FOXINV)return;FOXINV=true;setTimeout(()=>{const g=document.getElementById('foxBtn');if(g&&!g.classList.contains('tapped'))foxWave()},500)};
+  const go=()=>{if(FOXINV)return;FOXINV=true;if(FOXRM())return;setTimeout(()=>{const g=document.getElementById('foxBtn');if(g&&!g.classList.contains('tapped'))foxWave()},500)};
   if(typeof IntersectionObserver==='function'){try{const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting&&e.intersectionRatio>=.6)){io.disconnect();go()}},{threshold:[.6]});io.observe(f);return}catch(e){}}
   go();
 }
