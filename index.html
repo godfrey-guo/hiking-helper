@@ -61,7 +61,7 @@ details summary{cursor:pointer;color:var(--mute);font-size:13px;margin-top:8px}
 .gear{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px 10px}
 .gear label{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;cursor:pointer}
 .gear label:hover{background:var(--chip)}
-.gear label.done span{text-decoration:line-through;color:var(--mute)}
+.gear label.done span{text-decoration:none}
 .bar{height:8px;background:var(--chip);border-radius:99px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--acc)}
 table{border-collapse:collapse;width:100%}
@@ -274,11 +274,13 @@ main{padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
 .pickrow b{color:var(--acc);font-size:15px}.pickrow span{font-size:12px;color:var(--mute)}
 .pickrow:active{background:#F4F4F4}
 @media print{#pickBg,#trBg{display:none!important}}
-.fold[data-ui="tpl"],.fold[data-ui="basic"]{border-width:1.5px}
+.fold[data-ui="tpl"],.fold[data-ui="basic"],.fold[data-ui="itin"]{border-width:1.5px}
+.fold[data-ui="itin"]{border-color:#91B9CE}.fold[data-ui="itin"]>summary{background:#EAF3F7}
+.fico.b{border-color:#91B9CE}
 .fold[data-ui="tpl"]{border-color:#408467}.fold[data-ui="basic"]{border-color:#E9CF79}
 .fold[data-ui="tpl"]>summary{background:#E4EFE9}.fold[data-ui="basic"]>summary{background:#FBF3D4}
-.fold[data-ui="tpl"]>summary,.fold[data-ui="basic"]>summary{justify-content:flex-start;gap:10px;min-height:60px}
-.fold[data-ui="tpl"]>summary::after,.fold[data-ui="basic"]>summary::after{margin-left:auto;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#fff;border:1.5px solid currentColor;font-size:18px;line-height:1;flex:0 0 auto}
+.fold[data-ui="tpl"]>summary,.fold[data-ui="basic"]>summary,.fold[data-ui="itin"]>summary{justify-content:flex-start;gap:10px;min-height:60px}
+.fold[data-ui="tpl"]>summary::after,.fold[data-ui="basic"]>summary::after,.fold[data-ui="itin"]>summary::after{margin-left:auto;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#fff;border:1.5px solid currentColor;font-size:18px;line-height:1;flex:0 0 auto}
 .fico{flex:0 0 auto;width:44px;height:44px;border-radius:14px;background:#fff;border:1.5px solid #408467;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .fico.y{border-color:#E9CF79}.fico img{width:38px;height:38px;object-fit:contain}
 .ftx{display:flex;flex-direction:column;min-width:0}.ftx b{font-size:16px}.ftx small{font-size:12px;color:var(--mute);font-weight:400}
@@ -301,14 +303,15 @@ details.gcat[open]>summary:after{content:'－'}
 .gs{margin-left:auto;font-size:13px;color:var(--mute)}
 details.gcat>.gbtn,details.gcat>h3,details.gcat>.gear{margin-left:14px;margin-right:14px}
 details.gcat>.gear:last-child{margin-bottom:12px}
-.gbtn{margin-bottom:4px}
+.gbtn{display:flex;gap:8px;margin:2px 0 8px}
+.gbtn button{flex:1;min-width:0;min-height:46px;padding:8px 4px;font-size:15px;font-weight:700;border-radius:12px;white-space:nowrap}
 #gate{position:fixed;inset:0;z-index:100;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px}
 .gate-in{max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
 .gate-img{width:120px;height:120px;object-fit:contain}
 .gate-in h2{font-size:22px;margin:0}.gnote{color:var(--mute);font-size:15px;line-height:1.6}
-.gbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border-radius:14px;background:#408467;color:#fff;font-weight:700;font-size:17px;text-decoration:none}
+.gate-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border-radius:14px;background:#408467;color:#fff;font-weight:700;font-size:17px;text-decoration:none}
 .gerr{font-size:11px;color:#999;word-break:break-all}
-.gbtn2{width:100%;min-height:48px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-weight:600;font-size:16px}
+.gate-btn2{width:100%;min-height:48px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-weight:600;font-size:16px}
 @media print{#gate{display:none!important}}
 .nextbar{margin:18px 0 6px}
 .nextbar button{width:100%;min-height:50px;font-size:16px;font-weight:700;border-radius:14px}
@@ -752,7 +755,164 @@ function render(){
 
 const UI={};
 const fold=(k,title,inner,def)=>`<details class="fold" data-ui="${k}" ${(k in UI?UI[k]:def)?'open':''}><summary>${title}</summary><div class="foldin">${inner}</div></details>`;
+/* ITIN-START */
+/* ---------- 貼上行程文字（D1：A → B → C（宿））→ 行程表 ---------- */
+const ITIN_ALIAS={'奇萊登山口':'松雪樓','3.8K流籠頭':'林道下線3.8K','流籠頭':'林道下線3.8K'};
+const ITIN_EX='2027/1/29 (五) – 2/3 (三)\nD0 (1/29)：車程抵達合歡山區（宿松雪樓）\nD1 (1/30)：奇萊登山口 → 成功山屋 → 奇萊北峰 → 月形池 → 磐石中峰避難小屋（宿）\nD2 (1/31)：磐石中峰 → 磐石山 → 北鞍三叉避難小屋（宿）\nD3 (2/1)：北鞍營地 → (輕裝)太魯閣大山 → 平安池 → 大理石避難小屋（宿）\nD4 (2/2)：大理石營地 → 立霧主山 → (輕裝)帕托魯山 → 研海林道 9K工寮（宿）\nD5 (2/3)：9K工寮 → 3.8K流籠頭 → 岳王亭出登山口';
+const itNorm=s=>String(s).replace(/[（(][^）)]*[）)]/g,'').replace(/[\s·・\/／「」『』\[\]【】]/g,'').replace(/(出登山口|出口)$/,'');
+const itRoot=s=>itNorm(s).replace(/(避難小屋|避難山屋|山屋|山莊|營地|小屋|登山口|入口|停車場)$/,'');
+function itIndex(){
+  if(itIndex.c)return itIndex.c;
+  const out=[];
+  SHANGHO.forEach(m=>{if(m.id==='nan3')return;Object.keys(graphOf(m).adj).forEach(n=>out.push({n,m:m.id,nn:itNorm(n),r:itRoot(n)}))});
+  return itIndex.c=out;
+}
+/* 找最像的上河圖站名；pref＝偏好的地圖（依序） */
+function itFind(name,pref){
+  const a=ITIN_ALIAS[itNorm(name)]||name,q=itNorm(a),qr=itRoot(a);if(!q)return null;
+  let best=null;
+  itIndex().forEach(c=>{
+    let s=0;
+    if(c.nn===q)s=1;else if(c.r&&c.r===qr)s=.9;
+    else{const L=Math.min(c.r.length,qr.length);if(L>=2&&(c.r.includes(qr)||qr.includes(c.r)))s=.6+.2*L/Math.max(c.r.length,qr.length)}
+    if(s<.7)return;
+    if(pref){const p=pref.indexOf(c.m);if(p>=0)s+=.05*(pref.length-p)/pref.length}
+    if(!best||s>best.s)best={s,n:c.n,m:c.m,exact:c.nn===q}
+  });
+  return best;
+}
+/* 把偏好的地圖依序合併成一張圖（同名站點自動接起來） */
+function itGraph(pref){
+  const adj={},seen=new Set();
+  pref.forEach(id=>{const m=SHANGHO.find(x=>x.id===id);if(!m)return;const g=graphOf(m).adj;
+    Object.keys(g).forEach(u=>g[u].forEach(([v,w,car])=>{const k=u+'|'+v;if(seen.has(k))return;seen.add(k);(adj[u]=adj[u]||[]).push([v,w,car])}))});
+  return adj;
+}
+function itPath(adj,a,b){
+  if(a===b)return [a];
+  const {dist,prev}=dijkstra(adj,a);if(dist[b]===undefined)return null;
+  const ch=[];for(let c=b;c!==a;c=prev[c])ch.unshift(c);return [a].concat(ch);
+}
+const itEdge=(adj,u,v)=>{const e=(adj[u]||[]).find(x=>x[0]===v);return e?e[1]:0};
+/* 解析文字 → {days:[{d,date,items:[{raw,side,night}]}],date,memo} */
+function itParse(text){
+  const days=[],memo=[];let hdr=null;
+  String(text||'').split(/\r?\n/).forEach(line0=>{
+    const line=line0.replace(/[​﻿]/g,'').trim();if(!line)return;
+    if(!hdr){const h=line.match(/(\d{4})\s*[\/\-年]\s*(\d{1,2})\s*[\/\-月]\s*(\d{1,2})/);if(h&&!/^D\d/i.test(line.replace(/^[\[【]/,''))){hdr={y:+h[1],m:+h[2],d:+h[3]}}}
+    const m=line.match(/^[\[【]?\s*(?:D|Day|DAY|第)\s*(\d+)\s*(?:天|日)?\s*(?:[（(]\s*(\d{1,2})\s*[\/月\-]\s*(\d{1,2})\s*日?\s*(?:[（(][^）)]*[）)])?\s*[）)])?\s*[:：]\s*(.*)$/);
+    if(!m)return;
+    const dn=+m[1],body=(m[4]||'').trim();
+    if(!body||/^\d{1,2}\s*[\/月]\s*\d{1,2}/.test(body)&&!/[→➔➜>]/.test(body))return;
+    const parts=body.split(/\s*(?:→|->|➔|➜|＞|>|=>)\s*/).map(x=>x.trim()).filter(Boolean);
+    const items=parts.map(p=>{
+      let raw=p,side=false,night=false;
+      if(/^[（(]\s*輕裝\s*[）)]/.test(raw)||/^輕裝/.test(raw)){side=true;raw=raw.replace(/^[（(]\s*輕裝\s*[）)]\s*/,'').replace(/^輕裝\s*/,'')}
+      if(/[（(]\s*(宿|過夜|紮營|露營)[^）)]*[）)]|⛺/.test(raw)){night=true;raw=raw.replace(/[（(]\s*(宿|過夜|紮營|露營)[^）)]*[）)]/g,'').replace(/⛺/g,'')}
+      raw=raw.replace(/^[\u{1F300}-\u{1FAFF}☀-➿]+\s*/u,'').trim();
+      return {raw,side,night};
+    }).filter(x=>x.raw);
+    if(m[2]&&m[3])days.push({d:dn,md:[+m[2],+m[3]],items,body});else days.push({d:dn,items,body});
+  });
+  return {days,hdr};
+}
+/* 主程式：回傳 {nodes,date,starts,warn,guess,unknown} */
+function itBuild(text,opt){
+  opt=opt||{};
+  const P=itParse(text);if(!P.days.length)return {err:'找不到「D1：站名 → 站名」這種格式的行。請照上面的寫法，一天寫一行。'};
+  const d0=P.days.find(x=>x.d===0),dd=P.days.filter(x=>x.d>=1).sort((a,b)=>a.d-b.d);
+  if(!dd.length)return {err:'只找到 D0，沒有 D1 之後的行程。'};
+  // 先全部比對一次，統計哪張地圖最常出現
+  const cnt={};const all=[];
+  dd.forEach(day=>day.items.forEach(it=>{const f=itFind(it.raw);it.f=f;if(f){cnt[f.m]=(cnt[f.m]||0)+1}all.push(it)}));
+  const pref=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+  if(!pref.length)return {err:'站名都對不到上河圖。請用上河圖上的站名（例如：松雪樓、奇萊北峰、磐石山）。'};
+  all.forEach(it=>{it.f=itFind(it.raw,pref)});
+  const adj=itGraph(pref),mapOf=id=>SHANGHO.find(x=>x.id===id);
+  const warn=[],guess=[],unknown=[];
+  const nodes=[];let prevName=null,lastIdx=-1;const segs=[];
+  const push=(name,min,car,src,mid)=>{const m=mapOf(mid||pref[0]);const n=shNode(m,name,min,car);if(src&&src.raw&&src.raw!==name)n.note=(n.note?n.note+'；':'')+'你寫：'+src.raw;nodes.push(n);return n};
+  dd.forEach((day,di)=>{
+    const mains=day.items.filter(x=>!x.side),sides=day.items.filter(x=>x.side);day._from=Math.max(0,nodes.length-1);
+    // 與前一天終點同一站就不重複加
+    mains.forEach((it,i)=>{
+      const f=it.f,name=f?f.n:it.raw;
+      if(f&&!f.exact&&itNorm(f.n)!==itNorm(it.raw))guess.push(it.raw+' → '+f.n);
+      if(!f){unknown.push(it.raw)}
+      if(i===0&&prevName!==null&&f&&f.n===prevName){ /* 接續前一天，不重複 */ return }
+      let min=0,car=false;
+      if(prevName!==null&&f){
+        const p=itPath(adj,prevName,f.n);
+        if(p){
+          let tot=0;for(let k=1;k<p.length;k++)tot+=itEdge(adj,p[k-1],p[k]);min=tot;
+          if(p.length===2){const e=(adj[p[0]]||[]).find(x=>x[0]===p[1]);car=!!(e&&e[2])}
+          // 這一段如果有輕裝支線，先把支線掛上去（支線必須接在路徑上）
+          if(opt.expand&&p.length>2){p.slice(1,-1).forEach((mid,k)=>{push(mid,itEdge(adj,p[k],mid),false,null,f.m)});min=itEdge(adj,p[p.length-2],f.n)}
+        }else{warn.push(prevName+' → '+f.n+'：在上河圖裡接不起來，時間請自己填')}
+      }else if(prevName!==null&&!f){warn.push('「'+it.raw+'」不在上河圖，時間請自己填')}
+      const prevNode=nodes[nodes.length-1];
+      const n=push(name,min,car,it,f&&f.m);
+      if(!opt.expand&&prevNode&&prevName!==null&&f){const sp=itPath(adj,prevName,f.n);if(sp&&sp.length>2)segs.push({x:prevNode.id,z:n.id,p:sp,day})}if(!f)n.note='不在上河圖，請自填時間'+(n.note?'；'+n.note:'');if(it.night)n.night=true;
+      if(f)prevName=f.n;lastIdx=nodes.length-1;
+    });
+    // 輕裝支線：掛在這一天、離該支線最近的那一站後面
+    sides.forEach(sd=>{
+      const f=sd.f;if(!f){unknown.push(sd.raw);warn.push('輕裝「'+sd.raw+'」不在上河圖，時間請自己填');return}
+      if(itNorm(f.n)!==itNorm(sd.raw))guess.push(sd.raw+' → '+f.n);
+      const dayNodes=nodes.map((n,i)=>({n,i})).filter(x=>x.i>=day._from&&x.i<=lastIdx);
+      let bestA=null;
+      const dayId=new Set(dayNodes.map(x=>x.n.id));
+      segs.filter(sg=>sg.day===day).forEach(sg=>{
+        sg.p.slice(1,-1).forEach((nm,k)=>{
+          if(nodes.some(n=>n.name===nm&&dayId.has(n.id)))return;
+          const p1=itPath(adj,nm,f.n),p2=itPath(adj,f.n,nm);if(!p1||!p2)return;
+          const go=p1.slice(1).reduce((a,v,j)=>a+itEdge(adj,p1[j],v),0),back=p2.slice(1).reduce((a,v,j)=>a+itEdge(adj,p2[j],v),0);
+          if(!bestA||go+back<bestA.t)bestA={mid:nm,seg:sg,k:k+1,go,back,t:go+back}
+        })});
+      dayNodes.forEach(x=>{const p1=itPath(adj,x.n.name,f.n),p2=itPath(adj,f.n,x.n.name);if(!p1||!p2)return;
+        const go=p1.slice(1).reduce((a,v,k)=>a+itEdge(adj,p1[k],v),0),back=p2.slice(1).reduce((a,v,k)=>a+itEdge(adj,p2[k],v),0);
+        if(!bestA||go+back<bestA.t)bestA={i:x.i,go,back,t:go+back}});
+      if(!bestA){warn.push('輕裝「'+sd.raw+'」接不到這一天的路線，時間請自己填');const n=shNode(mapOf(pref[0]),f.n,0,false);n.note='輕裝往返（時間請自填）';nodes.splice(lastIdx+1,0,n);lastIdx++;return}
+      if(bestA.mid){ /* 支線接在兩個站之間的中間站：先把那個中間站插進行程 */
+        const sg=bestA.seg,iX=nodes.findIndex(n=>n.id===sg.x),iZ=nodes.findIndex(n=>n.id===sg.z);
+        const before=sg.p.slice(1,bestA.k+1).reduce((a,v,j)=>a+itEdge(adj,sg.p[j],v),0),after=sg.p.slice(bestA.k+1).reduce((a,v,j)=>a+itEdge(adj,sg.p[bestA.k+j],v),0);
+        const mn=shNode(mapOf(pref[0]),bestA.mid,before,false);nodes[iZ].min=after;nodes.splice(iZ,0,mn);lastIdx++;bestA.i=iZ;
+        sg.p=[]; /* 同一段只拆一次 */
+      }
+      const base=nodes[bestA.i].name,m0=mapOf(pref[0]);
+      const a=shNode(m0,f.n,bestA.go,false);a.note='輕裝往返';
+      const b=shNode(m0,base,bestA.back,false);b.note='輕裝返回';
+      nodes.splice(bestA.i+1,0,a,b);lastIdx+=2;
+      // 同一站若原本就有過夜旗標，移到最後一個（返回後）節點
+      if(nodes[bestA.i].night&&bestA.i>day._from){nodes[bestA.i].night=false;b.night=true}
+    });
+    // 每天最後一站＝過夜（最後一天除外）
+    if(di<dd.length-1&&nodes[lastIdx]){nodes[lastIdx].night=true}
+  });
+  // 日期：D1 自帶 (m/d) 優先，其次標題日期（若有 D0 則 D1＝D0 的隔天）
+  let date=null;const y0=P.hdr?P.hdr.y:null;
+  const d1=dd[0];
+  if(d1.md&&y0)date=y0+'-'+String(d1.md[0]).padStart(2,'0')+'-'+String(d1.md[1]).padStart(2,'0');
+  else if(P.hdr){const s0=P.hdr.y+'-'+String(P.hdr.m).padStart(2,'0')+'-'+String(P.hdr.d).padStart(2,'0');date=d0?addDays(s0,1):s0}
+  if(d0&&d0.body)warn.push('D0 只當備註，已寫進「備註」：'+d0.body);
+  return {nodes,date,starts:dd.length,warn,guess:[...new Set(guess)],unknown:[...new Set(unknown)],memo:d0?('D0'+(d0.md?'（'+d0.md[0]+'/'+d0.md[1]+'）':'')+'：'+d0.body):'',days:dd.length,pref};
+}
+
+/* ITIN-END */
 const SPEEDS=[[0.8,'走比較快','腳程好'],[1,'跟地圖一樣','照上河圖'],[1.3,'慢慢走','多拍照']];
+function itinBody(){
+  return `<div class="note" style="line-height:1.75"><b>怎麼寫（一天寫一行）</b><br>
+    <code>D1 (1/30)：起點 → 站2 → 站3（宿）</code><br>
+    ・<b>D0</b> 是出發前一天，只當備註；<b>D1、D2…</b> 才是走路的日子。<br>
+    ・站名用 <b>→</b> 連起來。一天的最後一站自動算過夜，也可以在後面加 <b>（宿）</b>。<br>
+    ・輕裝來回的支線，前面加 <b>(輕裝)</b>，例如 <code>→ (輕裝)太魯閣大山 →</code>。<br>
+    ・站名盡量用上河圖上的名稱，系統會找最像的；找不到的會列出來，時間再自己填。<br>
+    ・第一行可以寫日期，例如 <code>2027/1/29 (五) – 2/3 (三)</code>，會自動設定出發日。</div>
+    <textarea id="itinTxt" rows="9" style="margin-top:8px;width:100%" placeholder="貼上或輸入，例如：&#10;D1 (1/30)：奇萊登山口 → 成功山屋 → 奇萊北峰 → 磐石中峰避難小屋（宿）&#10;D2 (1/31)：磐石中峰 → 磐石山 → 北鞍營地（宿）">${esc(UI.itinTxt||'')}</textarea>
+    <label class="f" style="margin-top:6px;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="itinEx" ${UI.itinEx?'checked':''}> 把上河圖中間的站點也補進來（時間更細）</label>
+    <div class="row" style="margin-top:8px"><button class="pri" data-act="itinApply">套用到行程表</button><button data-act="itinDemo">填入範例</button><button data-act="itinClear">清空</button></div>
+    <div id="itinMsg" style="margin-top:8px">${UI.itinMsg||''}</div>`;
+}
 function vTrip(t,c){
   const nd=c.days.length,sh=c.tot,has=t.nodes.length>0;
   const bar=`<section class="card tbar"><div class="tb-n">${esc(t.name)}</div>
@@ -789,7 +949,7 @@ function vTrip(t,c){
       <div><b>${nd} 天</b><span>${sh.km?sh.km.toFixed(1)+' km':'距離未填'}</span></div>
     </div>
     <div class="note" style="margin-top:6px">每站的「上河分」填書上的時間；倍率 0.8 代表你比上河快 20%。</div>`;
-  const head=bar+fold('tpl',`<span class="fico"><img src="${IMG.deer}" alt=""></span><span class="ftx"><b>${has?'換一條路線':'選路線'}</b><small>百岳範本・搜尋　${TEMPLATES.length} 範本・${PEAKS.length} 座</small></span>`,vTpl(t),!has)+fold('basic',`<span class="fico y"><img src="${IMG.marten}" alt=""></span><span class="ftx"><b>自訂行程</b><small>名稱・日期・人數・倍率・分天</small></span>`,basic,false);
+  const head=bar+fold('tpl',`<span class="fico"><img src="${IMG.deer}" alt=""></span><span class="ftx"><b>${has?'換一條路線':'選路線'}</b><small>百岳範本・搜尋　${TEMPLATES.length} 範本・${PEAKS.length} 座</small></span>`,vTpl(t),!has)+fold('itin',`<span class="fico b"><img src="${IMG.squirrel}" alt=""></span><span class="ftx"><b>貼上行程文字</b><small>D1：站 → 站（宿），自動排進行程表</small></span>`,itinBody(),false)+fold('basic',`<span class="fico y"><img src="${IMG.marten}" alt=""></span><span class="ftx"><b>自訂行程</b><small>名稱・日期・人數・倍率・分天</small></span>`,basic,false);
   let body='';
   if(!has)body=`<div class="alert warn">還沒有站點。先在上方選路線，或到最下方「進階」手動加站點。</div>`;
   const sun={};
@@ -1430,16 +1590,16 @@ async function liffShare(){
 /* ---------- LINE 加好友閘門：LIFF_ID 有填才啟用。純前端的閘門，擋一般使用者，不防懂技術的人 ---------- */
 function gateShow(inner){let g=document.getElementById('gate');if(!g){g=document.createElement('div');g.id='gate';document.body.appendChild(g)}g.innerHTML='<div class="gate-in"><img src="'+IMG.bear+'" alt="" class="gate-img">'+inner+'</div>'}
 function gateHide(){const g=document.getElementById('gate');if(g)g.remove()}
-const GATE_ADD=()=>OA_URL?`<a class="gbtn" href="${OA_URL}">＋ 加入好友</a>`:'<div class="gnote">請在 LINE 搜尋我們的官方帳號並加入好友</div>';
+const GATE_ADD=()=>OA_URL?`<a class="gate-btn" href="${OA_URL}">＋ 加入好友</a>`:'<div class="gnote">請在 LINE 搜尋我們的官方帳號並加入好友</div>';
 async function gateCheck(){
   gateShow('<h2>確認中…</h2><div class="gnote">正在確認你是否已加入好友</div>');
   try{
     if(!liff.isLoggedIn()){liff.login();return}
     const f=await liff.getFriendship();
     if(f&&f.friendFlag){gateHide();return}
-    gateShow('<h2>加入好友，開始使用</h2><div class="gnote">登山小幫手需要先加入官方帳號好友，加入後回到這裡按「我已加入」。</div>'+GATE_ADD()+'<button class="gbtn2" data-gate="retry">我已加入，重新檢查</button>');
+    gateShow('<h2>加入好友，開始使用</h2><div class="gnote">登山小幫手需要先加入官方帳號好友，加入後回到這裡按「我已加入」。</div>'+GATE_ADD()+'<button class="gate-btn2" data-gate="retry">我已加入，重新檢查</button>');
   }catch(e){
-    gateShow('<h2>暫時無法確認</h2><div class="gnote">請在 LINE 裡開啟，或稍後再試。</div>'+GATE_ADD()+'<button class="gbtn2" data-gate="retry">重新檢查</button><div class="gerr">'+String((e&&(e.code||e.message))||e).slice(0,80).replace(/[<>&]/g,'')+'</div>');
+    gateShow('<h2>暫時無法確認</h2><div class="gnote">請在 LINE 裡開啟，或稍後再試。</div>'+GATE_ADD()+'<button class="gate-btn2" data-gate="retry">重新檢查</button><div class="gerr">'+String((e&&(e.code||e.message))||e).slice(0,80).replace(/[<>&]/g,'')+'</div>');
   }
 }
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-gate="retry"]'))gateCheck()});
@@ -1447,7 +1607,7 @@ function initLiff(){
   if(!LIFF_ID)return;
   gateShow('<h2>載入中…</h2>');
   const s=document.createElement('script');s.src='https://static.line-scdn.net/liff/edge/2/sdk.js';
-  s.onload=()=>{liff.init({liffId:LIFF_ID}).then(()=>{liffOK=true;render();gateCheck()}).catch(()=>gateShow('<h2>暫時無法確認</h2><div class="gnote">請在 LINE 裡開啟，或稍後再試。</div><button class="gbtn2" data-gate="retry">重新載入</button>'))};
+  s.onload=()=>{liff.init({liffId:LIFF_ID}).then(()=>{liffOK=true;render();gateCheck()}).catch(()=>gateShow('<h2>暫時無法確認</h2><div class="gnote">請在 LINE 裡開啟，或稍後再試。</div><button class="gate-btn2" data-gate="retry">重新載入</button>'))};
   s.onerror=()=>gateShow('<h2>連線失敗</h2><div class="gnote">請檢查網路後重新開啟。</div>');
   document.head.appendChild(s);
 }
@@ -1496,7 +1656,7 @@ TEMPLATES.push({"id":"nan3","name":"南三段（丹大東郡橫斷）：七彩�
 TEMPLATES.push({"id":"yushan-back","name":"玉山後四峰：排雲山莊→圓峰山屋→南玉山（含玉山南峰、東小南山）","days":"約3天","peaks":["玉山後四峰","玉山南峰","東小南山","南玉山","玉山小南山","小南山","鹿山"],"map":"m01","elev":3381,"auto":1,"path":["塔塔加鞍部","孟祿亭","前峰登山口","西峰下休憩亭","大崩壁","排雲山莊","主南岔路","圓峰山屋","三叉峰","玉山南峰","東小南山","玉山南峰","三叉峰","玉山小南山","南玉山","玉山小南山","三叉峰","圓峰山屋","主南岔路","排雲山莊","大崩壁","西峰下休憩亭","前峰登山口","孟祿亭","塔塔加鞍部"]});
 TEMPLATES.push({"id":"mabo","name":"馬博拉斯橫貫：東埔登山口→13K 苗圃（高解析步程圖）","days":"約6天","peaks":["馬博拉斯山","馬利加南山","秀姑巒山","八通關山","馬西山","喀西帕南山","大水窟山","馬博橫斷","馬博拉斯橫貫"],"map":"g16","elev":3826,"auto":1,"path":["東埔登山口","雲龍瀑布","樂樂山屋","觀高坪","八通關草原","八通關登山口","巴奈伊克山屋","三岔路口（巴奈）","中央金礦山屋","白洋金礦山屋","秀姑坪","三岔路口（秀姑坪）","秀馬山屋舊址","最低鞍部（馬前）","馬前營地","馬博拉斯山屋","馬拉孟斷崖","馬利亞文路山","馬利亞文路山東峰","最低鞍部（馬利加）","馬利加南山","馬利加南東峰山屋","馬利加南山東峰","公尺峰","馬布谷山屋","馬西山登山口","喀西帕南山登山口","太平谷西口","太平谷東北口","林道盡頭","43K工寮","捷徑下切點","林道廢棄發電機","溪底營地","35K工寮遺址","玉林橋下切點","玉林橋大崩谷","林道上切點","林道（19K段）","19K廢工寮","17K水泥橋","16K庫房","13K苗圃"]},{"id":"zhimao","name":"治茆山（人倫林道・大樹洞營地）","days":"約2天","peaks":["治茆山","治茆山南峰"],"map":"m02","elev":3000,"auto":1,"path":["登山口","大樹洞營地","人倫林道西支線","人倫林道北支線入口","45K停機坪三岔路口","治茆南峰營地","治茆山南峰","鞍部（治茆山）","治茆山","鞍部（治茆山）","治茆山南峰","治茆南峰營地","45K停機坪三岔路口","人倫林道北支線入口","人倫林道西支線","大樹洞營地","登山口"]});
 TEMPLATES.push({"id":"slx","name":"雪山聖稜線：馬達拉溪登山口→雪山登山口（高解析步程圖）","days":"約4天","peaks":["大霸尖山","雪山聖稜線","聖稜線","雪山","雪山主峰","雪山東峰","雪山北峰","布秀蘭山","巴紗拉雲山","素密達山","穆特勒布山","凱蘭特崑山"],"map":"m05h","elev":3886,"auto":1,"path":["馬達拉溪登山口","九九山莊","3100公尺稜線","岔路（伊澤山西）","岔路（伊澤山東）","中霸山屋","中霸坪","岔路（中霸坪南）","岔路（大霸尖山下）","霸南山屋","巴紗拉雲山屋舊址","巴紗拉雲山","布秀蘭山","素密達山","雲達卡山屋","岔路（穆南）","穆南營地","雪北岔路","雪北山屋","凱蘭特崑山北峰","鞍部岔路","凱蘭特崑山","北稜角","雪山主峰","圈谷底部","三六九山莊","雪山東峰","七卡山莊","雪山登山口・管制站"]},{"id":"wulin4","name":"武陵四秀（M05 版）：桃山山屋・喀拉業山・池有山・品田山（桃山登山口出入）","days":"約3天","peaks":["武陵四秀","桃山","喀拉業山","池有山","有池山","品田山"],"map":"m05h","elev":3524,"auto":1,"path":["桃山登山口","桃山黑水塘","桃山山屋","詩崙山","喀拉業山","詩崙山","桃山山屋","鞍部","三岔營地","有池山登山口","有池山","有池山登山口","新達山屋・水池","品田山","新達山屋・水池","有池山登山口","三岔營地","有池山登山口（武陵）","岔路（武陵）","桃山登山口"]},{"id":"taijia","name":"太加縱走：太平山→大神木登山口→四季部落","days":"約2天","peaks":["太加縱走","太平山","翠峰湖","加羅湖","檜木池"],"map":"m08","elev":1950,"auto":1,"path":["太平山","1300M・觀景台","多門山","檜木池營地","天池","墨池","岔路（偉蛋地）","豪邁池","岔路（撤退池）","大神木登山口","林道岔路","柵欄","四季部落"]});
-TEMPLATES.push(...[{"id":"p1-1","name":"玉山群峰・八通關古道：北峰鞍部→東埔登山口","days":"約1天","peaks":["玉山群峰"],"map":"m01","elev":2600,"nodes":[["北峰鞍部",0,0,"",0],["荖濃溪營地",80,0,"",0],["八通關",130,0,"",0],["觀高坪",45,0,"",2600],["對關",90,0,"",0],["樂樂山屋",105,0,"",1650],["父子斷崖",125,0,"",0],["東埔登山口",30,0,"",1200]],"auto":1,"chk":{"ok":7,"diff":0,"un":0}},{"id":"p4-0","name":"雪山西稜：雪山登山口→26K 登山口","days":"約3天","peaks":["雪山西稜","雪山主峰","頭鷹山","大雪山北峰","匹匹達山"],"map":"m06","elev":3886,"nodes":[["雪山登山口",0,0,"",0],["三六九山莊",375,0,"⚠貼文125分，上河圖375分",0],["雪山主峰",200,0,"⚠貼文140分，上河圖200分",3886],["翠池山屋",60,0,"⚠貼文90分，上河圖60分",3517],["博可爾草原",150,0,"",0],["火石山下營地",100,1,"⚠貼文120分，上河圖100分；2,960m，輕裝來回火石山 3,309m 約 65～80 分",2960],["大南山登山口",170,0,"⚠貼文180分，上河圖170分",0],["弓水營地",75,0,"⚠貼文170分，上河圖75分",3250],["頭鷹山",160,0,"",3509],["大雪山北峰",145,0,"⚠貼文160分，上河圖145分",3441],["岔路口",80,1,"⚠貼文60分，上河圖80分；輕裝來回大雪山 3,530m 約 40 分",3530],["匹匹達山",60,0,"⚠未對照上河圖",3435],["主稜鞍部",70,0,"⚠貼文110分，上河圖70分",2986],["28K 工寮",110,0,"⚠貼文200分，上河圖110分",0],["26K 登山口",40,0,"2,450m，輕裝來回中雪山 3,172m 約 190～240 分",2450]],"auto":1,"chk":{"ok":3,"diff":10,"un":1}},{"id":"p5-1","name":"雪山南稜・大小劍：油婆蘭山→劍山","days":"約1天","peaks":["雪山南稜","油婆蘭山","佳陽山","劍山"],"map":"m06","elev":0,"nodes":[["油婆蘭山",0,0,"",0],["老伍營地",110,0,"⚠貼文130分，上河圖110分",0],["佳陽山",80,0,"⚠貼文60分，上河圖80分",0],["劍山",160,0,"⚠貼文180分，上河圖160分",0]],"auto":1,"chk":{"ok":0,"diff":3,"un":0}},{"id":"p5-3","name":"雪山南稜・大小劍：雪山主峰→環山部落","days":"約1天","peaks":["雪山南稜","雪山主峰","志佳陽大山"],"map":"m06","elev":0,"nodes":[["雪山主峰",0,0,"",0],["雪山山莊舊址",90,0,"",0],["志佳陽大山",130,0,"⚠貼文200分，上河圖130分",0],["瓢簞山莊",35,0,"⚠貼文60分，上河圖35分",0],["志佳陽登山口",260,0,"⚠未對照上河圖",0],["環山部落",130,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":1,"diff":2,"un":2}},{"id":"p6-0","name":"白姑大山：最後農家登山口→白姑大山","days":"約2天","peaks":["白姑大山","三錐山"],"map":"m07","elev":0,"nodes":[["最後農家登山口",0,0,"",0],["最後水塔",30,0,"",0],["三錐山",190,0,"",0],["司晏池",190,0,"",0],["草青池營地",270,1,"⚠未對照上河圖",0],["白姑大山",50,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":3,"diff":0,"un":2}},{"id":"p7-3","name":"合歡群峰：北合歡山登山口→西合歡山","days":"約1天","peaks":["合歡群峰","北合歡山","3225 公尺峰","西合歡山"],"map":"m07b","elev":0,"nodes":[["北合歡山登山口",0,0,"",0],["反射板",70,0,"⚠貼文45分，上河圖70分",0],["北合歡山",15,0,"",0],["最低鞍部",75,0,"⚠貼文110分，上河圖75分",0],["3225 公尺峰",60,0,"⚠貼文50分，上河圖60分",0],["岔路",10,0,"",0],["西合歡山",35,0,"⚠貼文45分，上河圖35分",0]],"auto":1,"chk":{"ok":2,"diff":4,"un":0}},{"id":"p8-0","name":"北一段・南湖中央尖：思源啞口→南湖圈谷山莊","days":"約2天","peaks":["北一段"],"map":"m09a","elev":0,"nodes":[["思源啞口／6.7K 登山口",0,0,"",0],["木杆鞍部",330,0,"⚠貼文190分，上河圖330分",0],["新雲稜山莊",30,0,"",0],["審馬陣山莊岔路",175,0,"來回審馬陣山約 6 分",0],["南湖北山岔路",75,0,"來回南湖北山約 10 分",0],["南湖圈谷山莊",100,0,"",0]],"auto":1,"chk":{"ok":4,"diff":1,"un":0}},{"id":"p8-1","name":"北一段・南湖中央尖：南湖圈谷山莊→馬比杉山","days":"約1天","peaks":["北一段","南湖大山東峰","南湖大山東南峰","馬比杉山"],"map":"m09a","elev":0,"nodes":[["南湖圈谷山莊",0,0,"",0],["南湖大山東峰",75,0,"",0],["南湖大山東南峰",160,0,"⚠貼文170分，上河圖160分",0],["馬比杉山",105,0,"⚠貼文145分，上河圖105分",0]],"auto":1,"chk":{"ok":1,"diff":2,"un":0}},{"id":"p8-2","name":"北一段・南湖中央尖：南湖圈谷山莊→巴巴山","days":"約1天","peaks":["北一段","南湖大山","南湖大山南峰","巴巴山"],"map":"m09a","elev":0,"nodes":[["南湖圈谷山莊",0,0,"",0],["主峰鞍部",40,0,"⚠貼文30分，上河圖40分",0],["南湖大山",25,0,"⚠未對照上河圖",0],["南湖大山南峰岔路",65,0,"⚠未對照上河圖",0],["南湖大山南峰",10,0,"",0],["巴巴山",60,0,"",0]],"auto":1,"chk":{"ok":2,"diff":1,"un":2}},{"id":"p8-3","name":"北一段・南湖中央尖：木杆鞍部→中央尖山","days":"約2天","peaks":["北一段","中央尖山"],"map":"m09a","elev":0,"nodes":[["木杆鞍部",0,0,"",0],["南湖溪山屋",60,0,"⚠貼文70分，上河圖60分",0],["中央尖溪山屋",350,0,"⚠貼文265分，上河圖350分",0],["中央尖鞍部",240,0,"⚠貼文170分，上河圖240分",0],["中央尖山",50,0,"⚠貼文35分，上河圖50分",0]],"auto":1,"chk":{"ok":0,"diff":4,"un":0}},{"id":"p9-0","name":"北二段・鬼門關斷崖 O 型：清泉橋→17.5K 登山口","days":"約3天","peaks":["北二段","鈴鳴山","無明山西峰","無明山","鬼門關峰","甘薯南峰","遠多志山"],"map":"m09","elev":0,"nodes":[["清泉橋／17.5K 登山口",0,0,"",0],["23.2K 登山口",260,0,"⚠貼文100分，上河圖260分；輕裝來回閂山約 160 分",0],["27.5K 林道登山口",125,0,"",0],["稜線鞍部",50,0,"",0],["鈴鳴山",60,1,"",0],["東鞍營地",20,0,"",0],["無明山西峰",350,0,"",0],["無明山",240,0,"",0],["鬼門關峰",65,0,"",0],["鞍部",70,0,"",0],["甘薯南峰",70,0,"⚠貼文60分，上河圖70分；輕裝來回甘薯峰約 240 分",0],["遠多志山",60,0,"⚠貼文110分，上河圖60分",0],["耳無溪合流點",110,0,"⚠貼文200分，上河圖110分",0],["17.5K 登山口",200,0,"⚠貼文110分，上河圖200分",0]],"auto":1,"chk":{"ok":8,"diff":5,"un":0}},{"id":"p11-1","name":"奇萊連峰：奇萊山莊→屯原登山口","days":"約2天","peaks":["奇萊連峰"],"map":"m11","elev":0,"nodes":[["奇萊山莊",0,0,"",0],["主山登山口",90,1,"⚠貼文70分，上河圖90分；輕裝來回奇萊主山約 45 分",0],["南峰登山口",455,0,"⚠貼文360分，上河圖455分；輕裝來回奇萊主山南峰約 100 分",0],["天池叉路口",20,0,"輕裝來回南華山約 70 分",0],["天池山莊",40,0,"⚠貼文60分，上河圖40分",0],["屯原登山口",330,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":1,"diff":3,"un":1}},{"id":"p12-0","name":"奇萊東稜：松雪樓→岳王亭","days":"約4天","peaks":["奇萊東稜","奇萊北峰","磐石山","立霧主山"],"map":"m11b","elev":0,"nodes":[["松雪樓",0,0,"",0],["奇萊北峰",400,0,"",0],["磐石中峰營地",280,0,"⚠貼文200分，上河圖280分",0],["磐石山",80,1,"",0],["北鞍營地",510,0,"輕裝來回太魯閣大山約 150 分",0],["2680 鞍三岔口",270,0,"⚠未對照上河圖",0],["大理石營地",140,0,"⚠未對照上河圖",0],["立霧主山",25,0,"",0],["乾水池營地",90,0,"⚠貼文130分，上河圖90分",0],["三叉路口",140,1,"⚠貼文180分，上河圖140分；輕裝來回帕托魯山約 255 分",0],["研海林道 12K",100,0,"⚠貼文140分，上河圖100分",0],["0K 工寮",245,0,"⚠貼文190分，上河圖245分",0],["岳王亭",320,0,"⚠貼文285分，上河圖320分",0]],"auto":1,"chk":{"ok":4,"diff":6,"un":2}},{"id":"p13-0","name":"屏風山：大禹嶺→屏風山","days":"約1天","peaks":["屏風山"],"map":"m11c","elev":0,"nodes":[["大禹嶺",0,0,"",0],["鐵線吊橋營地",110,0,"",0],["合歡金礦營地",180,1,"⚠未對照上河圖",0],["屏風山",330,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":1,"diff":0,"un":2}},{"id":"p14-0","name":"能高安東軍縱走：屯原登山口→奧萬大遊客中心停車場","days":"約4天","peaks":["能高安東軍縱走","卡賀爾山","能高山主峰","光頭山","白石山"],"map":"m12","elev":3349,"nodes":[["屯原登山口",0,0,"",0],["雲海保線所",120,0,"",2360],["天池山莊",210,0,"",2860],["縣界埡口／光被八表",50,0,"",2798],["卡賀爾山",150,0,"⚠貼文170分，上河圖150分",3104],["能高山主峰",160,0,"⚠未對照上河圖",3261],["能高小屋舊址",20,1,"⚠未對照上河圖",0],["大陸池營地",45,0,"⚠未對照上河圖",0],["能高南峰北嶺",165,0,"⚠未對照上河圖",0],["南峰岔路口",85,0,"⚠未對照上河圖；輕裝來回能高山南峰 3,349m 約 8 分",3349],["3039 鞍營地",160,0,"⚠未對照上河圖",0],["光頭山",60,1,"⚠未對照上河圖",3060],["白石池",100,0,"",0],["白石山",90,0,"⚠貼文100分，上河圖90分",3108],["萬里池",40,0,"⚠貼文90分，上河圖40分",0],["屯鹿池",85,0,"⚠貼文110分，上河圖85分",0],["三岔路口",45,1,"輕裝來回安東軍山 3,068m 約 85 分",3068],["大崩壁",310,0,"⚠貼文430分，上河圖310分",0],["金杏真路岔路口",125,0,"⚠未對照上河圖",0],["萬大南溪第一支流合匯點",75,0,"⚠未對照上河圖",0],["奧萬大吊橋",280,0,"⚠未對照上河圖",0],["奧萬大遊客中心停車場",70,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":5,"diff":5,"un":11}},{"id":"p15-0","name":"干卓萬群峰：7.8K 停車處→武界林道登山口","days":"約4天","peaks":["干卓萬群峰","干卓萬山","卓社大山"],"map":"m13","elev":3369,"nodes":[["7.8K 停車處",0,0,"",1600],["干卓萬山登山口",180,0,"⚠未對照上河圖",2126],["獵寮營地",135,0,"⚠未對照上河圖",2430],["十粒溪源營地",120,0,"⚠未對照上河圖",2480],["乳形峰東鞍營地",240,0,"⚠貼文220分，上河圖240分",3025],["干卓萬山",120,1,"⚠未對照上河圖",3284],["三叉峰下營地",220,1,"⚠未對照上河圖",3240],["東北鞍營地",150,0,"⚠未對照上河圖",2994],["卓社大山",445,0,"⚠貼文275分，上河圖445分",3369],["2899 鞍部營地",200,0,"⚠未對照上河圖",0],["48K 紅磚屋",360,0,"⚠未對照上河圖",0],["武界林道登山口",120,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":0,"diff":2,"un":9}},{"id":"p18-0","name":"南二段：向陽森林遊樂區→東埔登山口","days":"約5天","peaks":["南二段","南雙頭山","塔芬山","大水窟山"],"map":"g17","elev":3829,"nodes":[["向陽森林遊樂區",0,0,"",2311],["林道登山口",80,0,"",2658],["向陽山屋",70,0,"",2895],["西側登山口",180,0,"輕裝來回向陽山 3,603m 約 60 分",3603],["嘉明湖避難山屋",40,0,"",3380],["三叉山登山口",135,0,"貼文 150 分，G17 原圖 15＋40＋80＝135（已對照原圖）；輕裝來回三叉山 3,496m 約 40 分，旁為嘉明湖 3,310m",3496],["拉庫音溪山屋",200,1,"貼文 170 分是從嘉明湖岔路口起算；加上三叉山登山口→嘉明湖岔路口 30 分＝200（G17）",2708],["南雙頭山",180,0,"",3356],["雲峰東峰三岔路口營地",195,0,"輕裝來回雲峰 3,562m 約 210 分",3562],["轆轆谷山屋",200,1,"",2977],["轆轆山登山口",70,0,"輕裝來回轆轆山 3,278m 約 48 分",3278],["塔芬山",240,0,"",3070],["塔芬谷山屋",80,0,"",2638],["達芬尖山登山口",150,0,"輕裝來回達芬尖山 3,206m 約 30 分",3206],["大水窟山屋",312,1,"",3280],["大水窟山",140,0,"",3642],["秀姑坪岔路",100,0,"貼文 140 分是反方向（秀姑坪岔路→大水窟山）；大水窟山→秀姑坪岔路為 100（已對照原圖）；往北可接秀姑巒山 3,829m",3829],["巴奈伊克山屋",230,0,"",2825],["八通關山登山口",30,0,"貼文 90 分，G17 原圖 30／30（已對照原圖）；輕裝來回八通關山 3,331m 約 50 分",3331],["東埔登山口",530,0,"貼文 605 分；G17 原圖：八通關山登山口→觀高坪 155＋觀高坪→樂樂山屋 215＋樂樂山屋→東埔 160＝530（已對照原圖）",1200]],"auto":1,"chk":{"ok":19,"diff":0,"un":0}},{"id":"p19-0","name":"新康橫斷：向陽森林遊樂區→新仙山營地","days":"約2天","peaks":["新康橫斷","連理山"],"map":"g18","elev":3380,"nodes":[["向陽森林遊樂區",0,0,"",2311],["嘉明湖避難山屋",370,0,"⚠貼文330分，上河圖370分",3380],["新康山岔路口",200,0,"⚠貼文190分，上河圖200分",3175],["布新岔路口",70,0,"3,176m，往南支線去程 245 分、返程 295 分可輕裝來回布拉克桑山 3,021m",3176],["桃源營地",310,1,"⚠貼文400分，上河圖310分",2743],["連理山",130,0,"",3145],["新仙山營地",130,0,"⚠未對照上河圖",3120]],"auto":1,"chk":{"ok":2,"diff":3,"un":1}},{"id":"p19-1","name":"新康橫斷：新仙山營地→天宮堡壘","days":"約1天","peaks":["新康橫斷","新康山"],"map":"g18","elev":3331,"nodes":[["新仙山營地",0,0,"",0],["最低鞍部",145,0,"⚠未對照上河圖",0],["新康山",75,0,"⚠貼文60分，上河圖75分",3331],["天宮堡壘",25,0,"",0]],"auto":1,"chk":{"ok":1,"diff":1,"un":1}},{"id":"p20-3","name":"南一段・南橫三星：四岔路口→石山林道登山口","days":"約2天","peaks":["南一段","雲水山","馬西巴秀山","卑南主山"],"map":"m19","elev":0,"nodes":[["四岔路口",0,0,"",0],["雲水山",130,0,"⚠貼文115分，上河圖130分",0],["馬西巴秀山",180,0,"",0],["三叉峰下營地",400,0,"",0],["卑南主山",40,0,"⚠貼文30分，上河圖40分",0],["石山林道登山口",275,0,"⚠未對照上河圖",0]],"auto":1,"chk":{"ok":2,"diff":2,"un":1}}]);
+TEMPLATES.push(...[{"id":"p1-1","name":"玉山群峰・八通關古道：北峰鞍部→父子斷崖","days":"約1天","peaks":["玉山群峰"],"map":"m01","elev":2600,"auto":1,"path":["北峰鞍部","荖濃溪營地","八通關","觀高坪","對關","乙女瀑布","樂樂山屋","雲龍瀑布","父子斷崖"]},{"id":"p4-0","name":"雪山西稜：雪山登山口→26K登山口","days":"約3天","peaks":["雪山西稜","雪山主峰","頭鷹山","大雪山北峰","匹匹達山"],"map":"m06","elev":3886,"auto":1,"path":["雪山登山口","七卡山莊","三六九山莊","雪山主峰","翠池山屋","博可爾草原","火石山下營地*","大南山登山口","大南山西鞍營地","弓水營地","頭鷹山","奇峻山","大雪山北峰","岔路口*","匹匹達東鞍營地","匹匹達山","主稜鞍部","28.5K登山口","28K工寮","26K登山口"]},{"id":"p5-1","name":"雪山南稜・大小劍：油婆蘭山→劍山","days":"約1天","peaks":["雪山南稜","油婆蘭山","佳陽山","劍山"],"map":"m06","elev":0,"auto":1,"path":["油婆蘭山","布伏奇寒山","老伍營地","佳陽山","劍山"]},{"id":"p5-3","name":"雪山南稜・大小劍：雪山主峰→環山部落","days":"約1天","peaks":["雪山南稜","雪山主峰","志佳陽大山"],"map":"m06","elev":0,"auto":1,"path":["雪山主峰","雪山山莊舊址","志佳陽大山","志佳陽基點峰","瓢簞山莊","賽良久","苗圃工寮舊址","南稜登山口","松柏農場","環山部落"]},{"id":"p6-0","name":"白姑大山：最後農家登山口→白姑大山","days":"約2天","peaks":["白姑大山","三錐山"],"map":"m07","elev":0,"auto":1,"path":["最後農家登山口","鞍部行車終點","最後水塔","三錐山","司晏池","白姑大山東南峰","2960公尺峰","草青池*","白姑大山"]},{"id":"p7-3","name":"合歡群峰：北合歡山登山口→西合歡山","days":"約1天","peaks":["合歡群峰","北合歡山","3225 公尺峰","西合歡山"],"map":"m07b","elev":0,"auto":1,"path":["北合歡山登山口","反射板","北合歡山","最低鞍部","3225公尺峰","岔路（西合歡山）","西合歡山"]},{"id":"p8-0","name":"北一段・南湖中央尖：思源埡口→南湖圈谷山莊","days":"約2天","peaks":["北一段"],"map":"m09a","elev":0,"auto":1,"path":["思源埡口","6.7K登山口","多加屯山水利三角點","木杆鞍部","新雲稜山莊","審馬陣山登山口","審馬陣山莊岔路","南湖北山岔路","南湖大山北峰","南湖圈谷山莊"]},{"id":"p8-1","name":"北一段・南湖中央尖：南湖圈谷山莊→馬比杉山","days":"約1天","peaks":["北一段","南湖大山東峰","南湖大山東南峰","馬比杉山"],"map":"m09a","elev":0,"auto":1,"path":["南湖圈谷山莊","上圈谷","南湖大山東峰","陶塞峰","南湖大山東南峰","指標2.2K岔路口","指標1.0K","馬比杉山"]},{"id":"p8-2","name":"北一段・南湖中央尖：南湖圈谷山莊→巴巴山","days":"約1天","peaks":["北一段","南湖大山","南湖大山南峰","巴巴山"],"map":"m09a","elev":0,"auto":1,"path":["南湖圈谷山莊","主峰鞍部","主峰南峰三岔路口","南湖池山屋","南湖大山南峰岔路","南湖大山南峰","巴巴山"]},{"id":"p8-3","name":"北一段・南湖中央尖：木杆鞍部→中央尖山","days":"約2天","peaks":["北一段","中央尖山"],"map":"m09a","elev":0,"auto":1,"path":["木杆鞍部","南湖溪山屋","第一香菇寮舊址","中央尖溪山屋","中央尖鞍部","中央尖山"]},{"id":"p9-0","name":"北二段・鬼門關斷崖 O 型：清泉橋→17.5K登山口","days":"約3天","peaks":["北二段","鈴鳴山","無明山西峰","無明山","鬼門關峰","甘薯南峰","遠多志山"],"map":"m09","elev":0,"auto":1,"path":["清泉橋","檢查哨","12.5K柵欄","17.5K登山口","23.2K登山口","25K工寮","27.5K林道登山口","稜線鞍部","鈴鳴山*","東鞍營地","無明山西峰","無明山","無明水池","鬼門關峰","鞍部","甘薯南峰","遠多志山","耳無溪合流點","17.5K登山口"]},{"id":"p11-1","name":"奇萊連峰：奇萊山莊→屯原","days":"約2天","peaks":["奇萊連峰"],"map":"m11","elev":0,"auto":1,"path":["奇萊山莊","主山登山口*","奇萊主山木屋舊址","裡山北鞍","南峰登山口","天池叉路口","天池山莊","雲海保線所","屯原"]},{"id":"p12-0","name":"奇萊東稜：松雪樓→岳王亭","days":"約4天","peaks":["奇萊東稜","奇萊北峰","磐石山","立霧主山"],"map":"m11b","elev":0,"auto":1,"path":["松雪樓","奇萊北峰","月形池","驚嘆號水池","磐石中峰營地","磐石山*","3089峰","北鞍營地","平安池","2680鞍三叉口","大理石營地","立霧主山","乾水池營地","三叉路口*","研海林道12K","9K工寮","林道捷徑入口","0K工寮","林道下線3.8K","1號索道","岳王亭"]},{"id":"p13-0","name":"屏風山：大禹嶺→屏風山","days":"約1天","peaks":["屏風山"],"map":"m11c","elev":0,"auto":1,"path":["大禹嶺","鐵線吊橋營地","合歡金礦*","屏風山"]},{"id":"p14-0","name":"能高安東軍縱走：屯原登山口→奧萬大森林遊樂區","days":"約4天","peaks":["能高安東軍縱走","卡賀爾山","能高山主峰","光頭山","白石山"],"map":"m12","elev":3349,"auto":1,"path":["屯原登山口","雲海保線所","天池山莊","縣界埡口","卡賀爾山","能高主峰","能高小屋舊址*","台灣池營地","3033公尺峰","能高南峰南嶺","能高山南峰","南鞍營地","3159峰南鞍","光頭山*","白石池","白石山","萬里池","屯鹿池","三岔路口*","第一次過溪","第二獵寮","大崩壁","第一主支流合匯點","第二主支流合匯點","鐵皮工寮","第一越嶺處","第二越嶺處","松風嶺","楓林吊橋","奧萬大森林遊樂區"]},{"id":"p15-0","name":"干卓萬群峰：登山口→48k工寮","days":"約4天","peaks":["干卓萬群峰","干卓萬山","卓社大山"],"map":"m13","elev":3369,"auto":1,"path":["登山口","環形營地","獵寮舊址營地","十粒溪源營地","乳形峰東鞍營地","千卓萬山*","三叉峰營地*","東峰下營地","東北鞍營地","東峰下營地","卓社大山東峰","3199公尺峰","卓社大山","2900鞍部營地","武界林道","大崩壁","53k工寮","48k工寮"]},{"id":"p18-0","name":"南二段：向陽森林遊樂區→八通關登山口","days":"約5天","peaks":["南二段","南雙頭山","塔芬山","大水窟山"],"map":"g17","elev":3829,"auto":1,"path":["向陽森林遊樂區","林道登山口","向陽山屋","西側登山口","嘉明湖避難山屋","三岔路口（向陽）","北峰下解說牌","三叉山登山口","嘉明湖岔路口","新康山岔路口","拉庫音溪山屋*","南雙頭山","西北鞍南雙池營地","雲峰東峰三岔路口營地","轆轆谷山屋*","轆轆山登山口","塔芬池","塔芬山","塔芬谷山屋","達芬尖山登山口","黑水塘","三岔路口（大水窟）","南大水窟山","大水窟山屋*","大水窟山","秀姑坪岔路","白洋金礦山屋","中央金礦山屋","三岔路口（巴奈）","巴奈伊克山屋","八通關山登山口","八通關草原","觀高坪","樂樂山屋","雲龍瀑布","八通關登山口"]},{"id":"p19-0","name":"新康橫斷：向陽森林遊樂區→新仙山營地・三岔路口","days":"約2天","peaks":["新康橫斷","連理山"],"map":"g18","elev":3380,"auto":1,"path":["向陽森林遊樂區","林道登山口","向陽山屋","西側登山口","嘉明湖避難山屋","三岔路口（新康）","北峰下解說牌","三叉山登山口","三叉山","嘉明湖岔路口","新康山岔路口","布新岔路口","3068公尺峰","連理西峰前營地","西峰東稜平台","飛機殘骸","桃源營地*","連理山","鞍部黑水塘","新仙山前營地","新仙山營地・三岔路口"]},{"id":"p19-1","name":"新康橫斷：新仙山營地・三岔路口→天宮堡壘","days":"約1天","peaks":["新康橫斷","新康山"],"map":"g18","elev":3331,"auto":1,"path":["新仙山營地・三岔路口","新仙山","最低鞍部","新康山","天宮堡壘"]},{"id":"p20-3","name":"南一段・南橫三星：四岔路口→卑南主山","days":"約2天","peaks":["南一段","雲水山","馬西巴秀山","卑南主山"],"map":"m19","elev":0,"auto":1,"path":["四岔路口","鞍部","雲水山","雲馬最低鞍部","馬西巴秀山","馬西巴秀石洞營地","3228公尺峰","三叉峰下營地","三岔路口（南一）","卑南主山"]}]);
 
 function buildNodes(tp){
   if(tp.bilu)return BILU.map(mkNode);
@@ -1744,6 +1904,24 @@ function act(a,el){
     case 'newTripSheet':{TRS=false;trRender();act('newTrip',el);break}
     case 'dupTripSheet':{TRS=false;trRender();act('dupTrip',el);break}
     case 'delTripSheet':{act('delTrip',el);trRender();break}
+    case 'itinDemo':{UI.itinTxt=ITIN_EX;UI.itinMsg='';UI.itin=true;break}
+    case 'itinClear':{UI.itinTxt='';UI.itinMsg='';break}
+    case 'itinApply':{
+      const ta=document.getElementById('itinTxt'),ex=document.getElementById('itinEx');
+      if(ta)UI.itinTxt=ta.value;if(ex)UI.itinEx=ex.checked;UI.itin=true;
+      const r=itBuild(UI.itinTxt||'',{expand:!!UI.itinEx});
+      if(r.err){UI.itinMsg='<div class="alert warn">'+esc(r.err)+'</div>';break}
+      keepUndo(t);t.nodes=r.nodes;t.srcMap=r.pref[0];t.srcTpl='';
+      if(r.date)t.date=r.date;
+      if(/^新行程|^畢羊/.test(t.name||'')||!t.name||TEMPLATES.some(x=>x.name===t.name))t.name=r.nodes[0].name+' → '+r.nodes[r.nodes.length-1].name+'（'+r.days+' 天）';
+      if(r.memo&&!(t.memo||'').includes(r.memo))t.memo=(t.memo?t.memo+String.fromCharCode(10):'')+r.memo;
+      const old=t.starts||{};t.starts={1:old[1]||'04:00'};for(let d=2;d<=dayCount(t);d++)t.starts[d]=old[d]||'06:00';
+      const L=[];L.push('<div class="alert ok">✅ 已套用：'+r.nodes.length+' 站、'+dayCount(t)+' 天'+(r.date?'，出發日 '+r.date:'')+'。下面的行程表已經排好，可以按「↓ 目前行程表」看。</div>');
+      if(r.guess.length)L.push('<div class="note"><b>依相近名稱對應：</b>'+r.guess.map(esc).join('；')+'<br>如果對應錯了，到行程表點該站的「✏️ 修改」改站名或分鐘。</div>');
+      if(r.unknown.length)L.push('<div class="alert warn"><b>這些站不在上河圖，時間先放 0 分：</b>'+r.unknown.map(esc).join('、')+'<br>請到行程表點該站的「✏️ 修改」，填上河分或自己估的分鐘。</div>');
+      r.warn.filter(w=>!/不在上河圖/.test(w)).forEach(w=>L.push('<div class="note">'+esc(w)+'</div>'));
+      UI.itinMsg=L.join('');
+      toast('已套用 '+r.nodes.length+' 站',1);break}
     case 'openPick':{PICK='';pickRender();setTimeout(()=>{const q=document.getElementById('pickQ');if(q)q.focus()},60);break}
     case 'closePick':break;
     case 'editNode':{SHEET=i;sheetRender();break}
@@ -1838,7 +2016,7 @@ document.addEventListener('change',e=>{
   else return;
   save();render();
 });
-document.addEventListener('input',e=>{if(e.target.id==='qaQ'){QG.q=e.target.value;qaBodyRender();return}if(e.target.id==='trQ'){TQ.q=e.target.value;TQ.n=30;trRefresh();return}if(e.target.id==='tplQ'){const l=document.getElementById('tplList');if(l)l.innerHTML=tplCards(e.target.value)}});
+document.addEventListener('input',e=>{if(e.target.id==='itinTxt'){UI.itinTxt=e.target.value;return}if(e.target.id==='qaQ'){QG.q=e.target.value;qaBodyRender();return}if(e.target.id==='trQ'){TQ.q=e.target.value;TQ.n=30;trRefresh();return}if(e.target.id==='tplQ'){const l=document.getElementById('tplList');if(l)l.innerHTML=tplCards(e.target.value)}});
 window.addEventListener('hashchange',()=>{tab=readTab();render()});
 render();
 initLiff();
